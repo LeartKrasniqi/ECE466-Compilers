@@ -37,15 +37,15 @@ P 		[pP][+-]?{DEC}+
 
 %%
  /* File Name */
-#									{BEGIN(INFO_STATE);}
+#					{BEGIN(INFO_STATE);}
 
-<INFO_STATE>^[0-9]+					{lineno = (int)strtol(yytext, (char **)NULL, 10);}
+<INFO_STATE>^[0-9]+			{lineno = (int)strtol(yytext, (char **)NULL, 10);}
 <INFO_STATE>\"(\\.|[^\\\"])*\"		{/* Copy the file name appropriately */
-										strncpy(file, yytext + 1, strlen(yytext) - 2); 
-										file[strlen(yytext) - 2] = '\0';
-									}
-<INFO_STATE>.						{/* Ignore other stuff */ ;}
-<INFO_STATE>\n 						{BEGIN(INITIAL);}
+						strncpy(file, yytext + 1, strlen(yytext) - 2); 
+						file[strlen(yytext) - 2] = '\0';
+					}
+<INFO_STATE>.				{/* Ignore other stuff */ ;}
+<INFO_STATE>\n 				{BEGIN(INITIAL);}
 
 
  /* Ignore Whitespace */
@@ -99,116 +99,112 @@ P 		[pP][+-]?{DEC}+
  /* Character Literals */
 L?\'					{state = CHARLIT; BEGIN(CHAR_STATE);}
 
-<CHAR_STATE>[^\n\\\']+	{	/* Non-escape Characters */ 
-							if (yyleng > 1)
-								warn_msg(file, lineno, "Unsupported multibyte character literal truncated to first byte");
-							yylval.char_lit = yytext[0]; 
-						}
-<CHAR_STATE>\n 			{	/* Unexpected newline error */
-							fprintf(stderr, "%s: %d: Error: Unexpected newline in char\n", file, lineno);
-							exit(-1);
-						}
-<CHAR_STATE>\\			{	/* Escape Characters */
-							BEGIN(ESC_STATE);
-						}
-<CHAR_STATE>\'			{	/* End of char */
-							BEGIN(INITIAL);
-							state = 0;
-							return CHARLIT;
-						}
+<CHAR_STATE>[^\n\\\']+			{ /* Non-escape Characters */ 
+						if (yyleng > 1)
+							warn_msg(file, lineno, "Unsupported multibyte character literal truncated to first byte");
+						yylval.char_lit = yytext[0]; 
+					}
+<CHAR_STATE>\n 				{ /* Unexpected newline error */
+						fprintf(stderr, "%s: %d: Error: Unexpected newline in char\n", file, lineno);
+						exit(-1);
+					}
+<CHAR_STATE>\\				{ /* Escape Characters */
+						BEGIN(ESC_STATE);
+					}
+<CHAR_STATE>\'				{ /* End of char */
+						BEGIN(INITIAL);
+						state = 0;
+						return CHARLIT;
+					}
 
 
  /* String Literals */ 
-\"							{	/* Initialize string stuff */
-								yylval.string.length = 0; 
-								//yylval.string.word[0] = '\0'; 
-								state = STRING; 
-								BEGIN(STRING_STATE);
-							}
-<STRING_STATE>[^\n\\\"]*	{	/* Non-escape Characters */
-								add2string(yytext, (char)NULL);
-							}
-<STRING_STATE>\\			{	/* Escape Characters */	
-								BEGIN(ESC_STATE);
- 							}
-<STRING_STATE>\"			{	/* End of string */
-								BEGIN(INITIAL);
-								state = 0;
-								return STRING;
-							}
+\"					{ /* Initialize string stuff */
+						yylval.string.length = 0; 
+						state = STRING; 
+						BEGIN(STRING_STATE);
+					}
+<STRING_STATE>[^\n\\\"]*		{ /* Non-escape Characters */
+						add2string(yytext, (char)NULL);
+					}
+<STRING_STATE>\\			{ /* Escape Characters */	
+						BEGIN(ESC_STATE);
+ 					}
+<STRING_STATE>\"			{ /* End of string */
+						BEGIN(INITIAL);
+						state = 0;
+						return STRING;
+					}
 
 
  /* Escape Codes */
-<ESC_STATE>[0abfnrtv'"\\?]	{	/* Deal with the Escape Characters */
-								
-								char esc_char;
-								switch(yytext[0])
-								{
-									case '0': 	esc_char = '\0'; break;
-									case 'a': 	esc_char = '\a'; break;
-									case 'b': 	esc_char = '\b'; break;
-									case 'f': 	esc_char = '\f'; break;
-									case 'n': 	esc_char = '\n'; break;
-									case 'r': 	esc_char = '\r'; break;
-									case 't': 	esc_char = '\t'; break;
-									case 'v': 	esc_char = '\v'; break;
-									case '\'': 	esc_char = '\''; break;
-									case '"': 	esc_char = '\"'; break;
-									case '\\': 	esc_char = '\\'; break;
-									case '?':	esc_char = '\?'; break;
-								}
-								switch(state)
-								{
-									case CHARLIT:	yylval.char_lit = esc_char; 
-													BEGIN(CHAR_STATE); 
-													break;
+<ESC_STATE>[0abfnrtv'"\\?]	{ /* Deal with the Escape Characters */								
+					char esc_char;
+					switch(yytext[0])
+					{
+						case '0': 	esc_char = '\0'; break;
+						case 'a': 	esc_char = '\a'; break;
+						case 'b': 	esc_char = '\b'; break;
+						case 'f': 	esc_char = '\f'; break;
+						case 'n': 	esc_char = '\n'; break;
+						case 'r': 	esc_char = '\r'; break;
+						case 't': 	esc_char = '\t'; break;
+						case 'v': 	esc_char = '\v'; break;
+						case '\'': 	esc_char = '\''; break;
+						case '"': 	esc_char = '\"'; break;
+						case '\\': 	esc_char = '\\'; break;
+						case '?':	esc_char = '\?'; break;
+					}
+					switch(state)
+					{
+						case CHARLIT:	yylval.char_lit = esc_char; 
+								BEGIN(CHAR_STATE); 
+								break;
 
-									case STRING:	add2string((char *)NULL, esc_char);
-													BEGIN(STRING_STATE); 	
-								}
-							}
-<ESC_STATE>[0-7]{1,3}		{	/* Octal Escapes */
-								int oct_num;
-								sscanf(yytext, "%o", &oct_num);
-								if (oct_num > 255)
-								{
-									fprintf(stderr, "%s: %d: Warning: Octal escape sequence \\%s out of range\n", file, lineno, yytext);
+						case STRING:	add2string((char *)NULL, esc_char);
+								BEGIN(STRING_STATE); 	
+					}
+				}
+<ESC_STATE>[0-7]{1,3}		{ /* Octal Escapes */
+					int oct_num;
+					sscanf(yytext, "%o", &oct_num);
+					if (oct_num > 255)
+					{
+						fprintf(stderr, "%s: %d: Warning: Octal escape sequence \\%s out of range\n", file, lineno, yytext);
+						oct_num = 255;
+					}
+					char oct_char = (char)oct_num;
+					switch(state)
+					{
+						case CHARLIT:	yylval.char_lit = oct_char;
+								BEGIN(CHAR_STATE);
+								break;
 
-									oct_num = 255;
-								}
-								char oct_char = (char)oct_num;
-								switch(state)
-								{
-									case CHARLIT:	yylval.char_lit = oct_char;
-													BEGIN(CHAR_STATE);
-													break;
+						case STRING:	add2string((char *)NULL, oct_char);
+								BEGIN(STRING_STATE);
+					}
 
-									case STRING:	add2string((char *)NULL, oct_char);
-													BEGIN(STRING_STATE);
-								}
+				}
+<ESC_STATE>[xX][0-9a-fA-F]+	{ /* Hex Escapes */
+					int hex_num;
+					sscanf(yytext + 1, "%x", &hex_num);
+					if (hex_num > 255)
+					{
+						fprintf(stderr, "%s: %d: Warning: Hex escape sequence \\%s out of range\n", file, lineno, yytext);
+						hex_num = 255;
+					}
+					char hex_char = (char)hex_num;
+					switch(state)
+					{
+						case CHARLIT:	yylval.char_lit = hex_char;
+								BEGIN(CHAR_STATE);
+								break;
 
-							}
-<ESC_STATE>[xX][0-9a-fA-F]+		{	/* Hex Escapes */
-									int hex_num;
-									sscanf(yytext + 1, "%x", &hex_num);
-									if (hex_num > 255)
-									{
-										fprintf(stderr, "%s: %d: Warning: Hex escape sequence \\%s out of range\n", file, lineno, yytext);
-
-										hex_num = 255;
-									}
-									char hex_char = (char)hex_num;
-									switch(state)
-									{
-										case CHARLIT:	yylval.char_lit = hex_char;
-														BEGIN(CHAR_STATE);
-														break;
-
-										case STRING:	add2string((char *)NULL, hex_char);
-														BEGIN(STRING_STATE);
-									}
-
-								}
+						case STRING:	add2string((char *)NULL, hex_char);
+								BEGIN(STRING_STATE);
+					}
+					
+				}
 
 
  /* Operators */
@@ -224,7 +220,7 @@ L?\'					{state = CHARLIT; BEGIN(CHAR_STATE);}
 "!="         		{yylval.kw = "NOTEQ"; return NOTEQ;}
 "&&"         		{yylval.kw = "LOGAND"; return LOGAND;}
 "||"         		{yylval.kw = "LOGOR"; return LOGOR;}
-"..."				{yylval.kw = "ELLIPSIS"; return ELLIPSIS;}
+"..."			{yylval.kw = "ELLIPSIS"; return ELLIPSIS;}
 "*="         		{yylval.kw = "TIMESEQ"; return TIMESEQ;}
 "/="         		{yylval.kw = "DIVEQ"; return DIVEQ;}
 "%="         		{yylval.kw = "MODEQ"; return MODEQ;}
@@ -242,107 +238,107 @@ L?\'					{state = CHARLIT; BEGIN(CHAR_STATE);}
 
 
  /* Numberic Constants */ 
-{DEC}				{	/* Deal with simple integers */			
-						int_info(yytext, SIGNED_T, INT_T);
-						return NUMBER;
-					}
-{DEC}"U"			{	/* Unsigned integers */
-						yytext[yyleng - 1] = '\0';
-						int_info(yytext, UNSIGNED_T, INT_T);
-						return NUMBER;
-					}
-{DEC}"L"			{	/* Signed long */
-						yytext[yyleng - 1] = '\0';
-						int_info(yytext, SIGNED_T, LONG_T);
-						return NUMBER;
-					}
-{DEC}"LL"			{	/* Signed long long */
-						yytext[yyleng - 2] = '\0';
-						int_info(yytext, SIGNED_T, LONGLONG_T);
-						return NUMBER;
-					}
-{DEC}"LLU"			{	/* Unsigned long long */
-						yytext[yyleng - 3] = '\0';
-						int_info(yytext, UNSIGNED_T, LONGLONG_T);
-						return NUMBER;
-					}
-{OCT}				{	/* Deal with simple octals */
-						oct_info(yytext, SIGNED_T, INT_T);
-						return NUMBER;
-					}
-{OCT}"U"			{	/* Unsigned octal */
-						yytext[yyleng - 1] = '\0';
-						oct_info(yytext, UNSIGNED_T, INT_T);
-						return NUMBER;
-					}
-{OCT}"L"			{	/* Signed long octal */
-						yytext[yyleng - 1] = '\0';
-						oct_info(yytext, SIGNED_T, LONG_T);
-						return NUMBER;
-					}
-{OCT}"LL"			{	/* Signed long long octal */
-						yytext[yyleng - 2] = '\0';
-						oct_info(yytext, SIGNED_T, LONGLONG_T);
-						return NUMBER;
-					}
-{OCT}"LLU"			{	/* Unsigned long long octal */
-						yytext[yyleng - 3] = '\0';
-						oct_info(yytext, UNSIGNED_T, LONGLONG_T);
-						return NUMBER;
-					}
-{HEX}				{	/* Deal with simple hexadecimals */
-						hex_info(yytext, SIGNED_T, INT_T);
-						return NUMBER;
-					}
-{HEX}"U"			{	/* Unsigned hex */
-						yytext[yyleng - 1] = '\0';
-						hex_info(yytext, UNSIGNED_T, INT_T);
-						return NUMBER;
-					}
-{HEX}"L"			{	/* Signed long hex */
-						yytext[yyleng - 1] = '\0';
-						hex_info(yytext, SIGNED_T, LONG_T);
-						return NUMBER;
-					}
-{HEX}"LL"			{	/* Signed long long hex */
-						yytext[yyleng - 2] = '\0';
-						hex_info(yytext, SIGNED_T, LONGLONG_T);
-						return NUMBER;
-					}
-{HEX}"LLU"			{	/* Unsigned long long hex */
-						yytext[yyleng - 3] = '\0';
-						hex_info(yytext, SIGNED_T, LONGLONG_T);
-						return NUMBER;
-					}
-{HEX}{P}			{	/* "p" form hexadecimal floats */
-						real_info(yytext, SIGNED_T, DOUBLE_T);				
-						return NUMBER;
-					}	
-{REAL}				{	/* Dealing with simple doubles */
-						real_info(yytext, SIGNED_T, DOUBLE_T);
-						return NUMBER;
-					}
-{REAL}"L"			{	/* Signed long double */
-						yytext[yyleng - 1] = '\0';
-						real_info(yytext, SIGNED_T, LONGDOUBLE_T);
-						return NUMBER;
-					}
-[0]?{DEC}+{EXP}[f]?	{	/* Dealing with exponents */
-						if(yytext[yyleng - 1] == 'f')
-							real_info(yytext, SIGNED_T, FLOAT_T);
-						else
-							real_info(yytext, SIGNED_T, DOUBLE_T);
-						return NUMBER;
-					}
-{REAL}"f"			{	/* Explicit float type */
-						yytext[yyleng - 1] = '\0';
+{DEC}				{ /* Deal with simple integers */			
+					int_info(yytext, SIGNED_T, INT_T);
+					return NUMBER;
+				}
+{DEC}"U"			{ /* Unsigned integers */
+					yytext[yyleng - 1] = '\0';
+					int_info(yytext, UNSIGNED_T, INT_T);
+					return NUMBER;
+				}
+{DEC}"L"			{ /* Signed long */
+					yytext[yyleng - 1] = '\0';
+					int_info(yytext, SIGNED_T, LONG_T);
+					return NUMBER;
+				}
+{DEC}"LL"			{ /* Signed long long */
+					yytext[yyleng - 2] = '\0';
+					int_info(yytext, SIGNED_T, LONGLONG_T);
+					return NUMBER;
+				}
+{DEC}"LLU"			{ /* Unsigned long long */
+					yytext[yyleng - 3] = '\0';
+					int_info(yytext, UNSIGNED_T, LONGLONG_T);
+					return NUMBER;
+				}
+{OCT}				{ /* Deal with simple octals */
+					oct_info(yytext, SIGNED_T, INT_T);
+					return NUMBER;
+				}
+{OCT}"U"			{ /* Unsigned octal */
+					yytext[yyleng - 1] = '\0';
+					oct_info(yytext, UNSIGNED_T, INT_T);
+					return NUMBER;
+				}
+{OCT}"L"			{ /* Signed long octal */
+					yytext[yyleng - 1] = '\0';
+					oct_info(yytext, SIGNED_T, LONG_T);
+					return NUMBER;
+				}
+{OCT}"LL"			{ /* Signed long long octal */
+					yytext[yyleng - 2] = '\0';
+					oct_info(yytext, SIGNED_T, LONGLONG_T);
+					return NUMBER;
+				}
+{OCT}"LLU"			{ /* Unsigned long long octal */
+					yytext[yyleng - 3] = '\0';
+					oct_info(yytext, UNSIGNED_T, LONGLONG_T);
+					return NUMBER;
+				}
+{HEX}				{ /* Deal with simple hexadecimals */
+					hex_info(yytext, SIGNED_T, INT_T);
+					return NUMBER;
+				}
+{HEX}"U"			{ /* Unsigned hex */
+					yytext[yyleng - 1] = '\0';
+					hex_info(yytext, UNSIGNED_T, INT_T);
+					return NUMBER;
+				}
+{HEX}"L"			{ /* Signed long hex */
+					yytext[yyleng - 1] = '\0';
+					hex_info(yytext, SIGNED_T, LONG_T);
+					return NUMBER;
+				}
+{HEX}"LL"			{ /* Signed long long hex */
+					yytext[yyleng - 2] = '\0';
+					hex_info(yytext, SIGNED_T, LONGLONG_T);
+					return NUMBER;
+				}
+{HEX}"LLU"			{ /* Unsigned long long hex */
+					yytext[yyleng - 3] = '\0';
+					hex_info(yytext, SIGNED_T, LONGLONG_T);
+					return NUMBER;
+				}
+{HEX}{P}			{ /* "p" form hexadecimal floats */
+					real_info(yytext, SIGNED_T, DOUBLE_T);				
+					return NUMBER;
+				}	
+{REAL}				{ /* Dealing with simple doubles */
+					real_info(yytext, SIGNED_T, DOUBLE_T);
+					return NUMBER;
+				}
+{REAL}"L"			{ /* Signed long double */
+					yytext[yyleng - 1] = '\0';
+					real_info(yytext, SIGNED_T, LONGDOUBLE_T);
+					return NUMBER;
+				}
+[0]?{DEC}+{EXP}[f]?		{ /* Dealing with exponents */
+					if(yytext[yyleng - 1] == 'f')
 						real_info(yytext, SIGNED_T, FLOAT_T);
-						return NUMBER;
-					}
+					else
+						real_info(yytext, SIGNED_T, DOUBLE_T);
+					return NUMBER;
+				}
+{REAL}"f"			{ /* Explicit float type */
+					yytext[yyleng - 1] = '\0';
+					real_info(yytext, SIGNED_T, FLOAT_T);
+					return NUMBER;
+				}
 
  /* Ignore Comments */
 \/\*            		{BEGIN(COMMENT_STATE);}
-<COMMENT_STATE>.|\n    	{ /* Ignore everything */ ;}
+<COMMENT_STATE>.|\n    		{ /* Ignore everything */ ;}
 <COMMENT_STATE>\*\/   		{BEGIN(INITIAL);}
 \/\/.*\n        		{ /* Ignore single-line comments */  ;}
 
@@ -415,10 +411,10 @@ void print_char(char c)
 		case '\"': 	fprintf(stdout, "\\\""); break;
 		case '\\': 	fprintf(stdout, "\\\\"); break;
 		default:	if (c > 127 || c < 32)
-						fprintf(stdout, "\\%03o", (unsigned char)c);
-					else
-						fprintf(stdout, "%c", c);
-					break;
+					fprintf(stdout, "\\%03o", (unsigned char)c);
+				else
+					fprintf(stdout, "%c", c);
+				break;
 	}
 }
 
@@ -440,45 +436,45 @@ int main(int argc, char **argv)
 		{
 			switch(t)
 			{
-				case IDENT:		fprintf(stdout, "%s\t %d\t IDENT\t %s\n", file, lineno, yylval.ident.name);
-								break;
+				case IDENT:	fprintf(stdout, "%s\t %d\t IDENT\t %s\n", file, lineno, yylval.ident.name);
+						break;
 
 				case CHARLIT:	fprintf(stdout, "%s\t %d\t CHARLIT\t ", file, lineno); 
-								print_char(yylval.char_lit);
-								fprintf(stdout, "\n");
-								break;
+						print_char(yylval.char_lit);
+						fprintf(stdout, "\n");
+						break;
 
 				case STRING:	fprintf(stdout, "%s\t %d\t STRING\t ", file, lineno);
-								for(int i = 0; i < yylval.string.length; i++)
-									print_char(yylval.string.word[i]);
-								fprintf(stdout, "\n");
-								break;
+						for(int i = 0; i < yylval.string.length; i++)
+							print_char(yylval.string.word[i]);
+						fprintf(stdout, "\n");
+						break;
 
 				case NUMBER:	fprintf(stdout, "%s\t %d\t NUMBER\t ", file, lineno);
 								
-								if(yylval.num.type == INT_T || yylval.num.type == LONG_T || yylval.num.type == LONGLONG_T)
-									fprintf(stdout, "INTEGER\t %lld\t", yylval.num.int_value);
-								else
-									fprintf(stdout, "REAL\t %Lg\t", yylval.num.float_value);
+						if(yylval.num.type == INT_T || yylval.num.type == LONG_T || yylval.num.type == LONGLONG_T)
+							fprintf(stdout, "INTEGER\t %lld\t", yylval.num.int_value);
+						else
+							fprintf(stdout, "REAL\t %Lg\t", yylval.num.float_value);
 								
-								if(yylval.num.sign == UNSIGNED_T)
-									fprintf(stdout, "UNSIGNED,");
+						if(yylval.num.sign == UNSIGNED_T)
+							fprintf(stdout, "UNSIGNED,");
 
-								switch(yylval.num.type)
-								{
-									case INT_T:			fprintf(stdout, "INT\n");break;
-									case LONG_T:		fprintf(stdout, "LONG\n");break;
-									case LONGLONG_T: 	fprintf(stdout, "LONGLONG\n");break;
-									case DOUBLE_T: 		fprintf(stdout, "DOUBLE\n");break;
-									case LONGDOUBLE_T: 	fprintf(stdout, "LONGDOUBLE\n");break;
-									case FLOAT_T: 		fprintf(stdout, "FLOAT\n");break;
-									default: 			break;
-								}
+						switch(yylval.num.type)
+						{
+							case INT_T:		fprintf(stdout, "INT\n"); break;
+							case LONG_T:		fprintf(stdout, "LONG\n"); break;
+							case LONGLONG_T: 	fprintf(stdout, "LONGLONG\n"); break;
+							case DOUBLE_T: 		fprintf(stdout, "DOUBLE\n"); break;
+							case LONGDOUBLE_T: 	fprintf(stdout, "LONGDOUBLE\n"); break;
+							case FLOAT_T: 		fprintf(stdout, "FLOAT\n"); break;
+							default: 		break;
+						}
 								
-								break;
+						break;
 
-				default:		fprintf(stdout, "%s\t %d\t %s\n", file, lineno, yylval.kw);
-								break;
+				default:	fprintf(stdout, "%s\t %d\t %s\n", file, lineno, yylval.kw);
+						break;
 			}
 		}
 
