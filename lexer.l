@@ -28,12 +28,12 @@ void warn_msg(char *file_name, int line_number, char *msg);
 %x COMMENT_STATE
 %x INFO_STATE
 
-DEC		[1-9]+[0-9]*				
-OCT		0[0-7]*						
-HEX		0[xX][a-fA-F0-9]+			
+DEC	[1-9]+[0-9]*				
+OCT	0[0-7]*						
+HEX	0[xX][a-fA-F0-9]+			
 REAL 	[0-9]*\.[0-9]*				
 EXP 	[eE][+-]?{DEC}+				
-P 		[pP][+-]?{DEC}+				
+P 	[pP][+-]?{DEC}+				
 
 %%
  /* File Name */
@@ -89,7 +89,7 @@ P 		[pP][+-]?{DEC}+
 "while"			{yylval.kw = "WHILE"; return WHILE;}
 "_Bool"			{yylval.kw = "_BOOL"; return _BOOL;}
 "_Complex"		{yylval.kw = "_COMPLEX"; return _COMPLEX;}
-"_Imaginary"	{yylval.kw = "_IMAGINARY"; return _IMAGINARY;}
+"_Imaginary"		{yylval.kw = "_IMAGINARY"; return _IMAGINARY;}
 
 
  /* Identifiers -- Note: Cannot begin with a number */
