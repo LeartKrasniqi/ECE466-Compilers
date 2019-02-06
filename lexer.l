@@ -387,10 +387,20 @@ void add2string(char *buf, char esc)
 	}
 	else
 	{	
-		for(int i = 0; i < strlen(buf); i++)
+		int string_length;
+
+		if(strlen(buf) > 4096)
+		{
+			warn_msg(file, lineno, "Long string truncated to first 4k bytes");
+			string_length = 4096;
+		}
+		else
+			string_length = strlen(buf); 
+
+		for(int i = 0; i < string_length; i++)
 			yylval.string.word[yylval.string.length + i] = buf[i];
 
-		yylval.string.length += strlen(buf);
+		yylval.string.length += string_length;
 	}
 	
 }
