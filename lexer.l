@@ -20,6 +20,7 @@ void hex_info(char *buf, int sign, int type);
 void real_info(char *buf, int sign, int type);
 void add2string(char *buf, char esc);
 void print_char(char c);
+char* print_kw(int token);
 void warn_msg(char *file_name, int line_number, char *msg);
 %}
 %x CHAR_STATE
@@ -53,43 +54,43 @@ P 	[pP][+-]?{DEC}+
 
 
  /* Key Words */
-"auto"			{yylval.kw = "AUTO"; return AUTO;}
-"break"			{yylval.kw = "BREAK"; return BREAK;}
-"case"			{yylval.kw = "CASE"; return CASE;}
-"char"			{yylval.kw = "CHAR"; return CHAR;}
-"const"			{yylval.kw = "CONST"; return CONST;}
-"continue"		{yylval.kw = "CONTINUE"; return CONTINUE;}
-"default"		{yylval.kw = "DEFAULT"; return DEFAULT;}
-"do"			{yylval.kw = "DO"; return DO;}
-"double"		{yylval.kw = "DOUBLE"; return DOUBLE;}
-"else"			{yylval.kw = "ELSE"; return ELSE;}
-"enum"			{yylval.kw = "ENUM"; return ENUM;}
-"extern"		{yylval.kw = "EXTERN"; return EXTERN;}
-"float"			{yylval.kw = "FLOAT"; return FLOAT;}
-"for"			{yylval.kw = "FOR"; return FOR;}
-"goto"			{yylval.kw = "GOTO"; return GOTO;}
-"if"			{yylval.kw = "IF"; return IF;}
-"inline"		{yylval.kw = "INLINE"; return INLINE;}
-"int"			{yylval.kw = "INT"; return INT;}
-"long"			{yylval.kw = "LONG"; return LONG;}
-"register"		{yylval.kw = "REGISTER"; return REGISTER;}
-"restrict"		{yylval.kw = "RESTRICT"; return RESTRICT;}
-"return"		{yylval.kw = "RETURN"; return RETURN;}
-"short"			{yylval.kw = "SHORT"; return SHORT;}
-"signed"		{yylval.kw = "SIGNED"; return SIGNED;}
-"sizeof"		{yylval.kw = "SIZEOF"; return SIZEOF;}
-"static"		{yylval.kw = "STATIC"; return STATIC;}
-"struct"		{yylval.kw = "STRUCT"; return STRUCT;}
-"switch"		{yylval.kw = "SWITCH"; return SWITCH;}
-"typedef"		{yylval.kw = "TYPEDEF"; return TYPEDEF;}
-"union"			{yylval.kw = "UNION"; return UNION;}
-"unsigned"		{yylval.kw = "UNSIGNED"; return UNSIGNED;}
-"void"			{yylval.kw = "VOID"; return VOID;}
-"volatile"		{yylval.kw = "VOLATILE"; return VOLATILE;}
-"while"			{yylval.kw = "WHILE"; return WHILE;}
-"_Bool"			{yylval.kw = "_BOOL"; return _BOOL;}
-"_Complex"		{yylval.kw = "_COMPLEX"; return _COMPLEX;}
-"_Imaginary"		{yylval.kw = "_IMAGINARY"; return _IMAGINARY;}
+"auto"			{return AUTO;}
+"break"			{return BREAK;}
+"case"			{return CASE;}
+"char"			{return CHAR;}
+"const"			{return CONST;}
+"continue"		{return CONTINUE;}
+"default"		{return DEFAULT;}
+"do"			{return DO;}
+"double"		{return DOUBLE;}
+"else"			{return ELSE;}
+"enum"			{return ENUM;}
+"extern"		{return EXTERN;}
+"float"			{return FLOAT;}
+"for"			{return FOR;}
+"goto"			{return GOTO;}
+"if"			{return IF;}
+"inline"		{return INLINE;}
+"int"			{return INT;}
+"long"			{return LONG;}
+"register"		{return REGISTER;}
+"restrict"		{return RESTRICT;}
+"return"		{return RETURN;}
+"short"			{return SHORT;}
+"signed"		{return SIGNED;}
+"sizeof"		{return SIZEOF;}
+"static"		{return STATIC;}
+"struct"		{return STRUCT;}
+"switch"		{return SWITCH;}
+"typedef"		{return TYPEDEF;}
+"union"			{return UNION;}
+"unsigned"		{return UNSIGNED;}
+"void"			{return VOID;}
+"volatile"		{return VOLATILE;}
+"while"			{return WHILE;}
+"_Bool"			{return _BOOL;}
+"_Complex"		{return _COMPLEX;}
+"_Imaginary"		{return _IMAGINARY;}
 
 
  /* Identifiers -- Note: Cannot begin with a number */
@@ -209,28 +210,28 @@ L?\'					{state = CHARLIT; BEGIN(CHAR_STATE);}
 
  /* Operators */
 [-~!%^&*+=\|<.>/?]	{return yytext[0];}
-"->"         		{yylval.kw = "INDSEL"; return INDSEL;}
-"++"         		{yylval.kw = "PLUSPLUS"; return PLUSPLUS;}
-"--"         		{yylval.kw = "MINUSMINUS"; return MINUSMINUS;}
-"<<"         		{yylval.kw = "SHL"; return SHL;}
-">>"         		{yylval.kw = "SHR"; return SHR;}
-"<="         		{yylval.kw = "LTEQ"; return LTEQ;}
-">="         		{yylval.kw = "GTEQ"; return GTEQ;}
-"=="         		{yylval.kw = "EQEQ"; return EQEQ;}
-"!="         		{yylval.kw = "NOTEQ"; return NOTEQ;}
-"&&"         		{yylval.kw = "LOGAND"; return LOGAND;}
-"||"         		{yylval.kw = "LOGOR"; return LOGOR;}
-"..."			{yylval.kw = "ELLIPSIS"; return ELLIPSIS;}
-"*="         		{yylval.kw = "TIMESEQ"; return TIMESEQ;}
-"/="         		{yylval.kw = "DIVEQ"; return DIVEQ;}
-"%="         		{yylval.kw = "MODEQ"; return MODEQ;}
-"+="         		{yylval.kw = "PLUSEQ"; return PLUSEQ;}
-"-="         		{yylval.kw = "MINUSEQ"; return MINUSEQ;}
-"<<="        		{yylval.kw = "SHLEQ"; return SHLEQ;}
-">>="        		{yylval.kw = "SHREQ"; return SHREQ;}
-"&="         		{yylval.kw = "ANDEQ"; return ANDEQ;}
-"|="         		{yylval.kw = "OREQ"; return OREQ;}
-"^="         		{yylval.kw = "XOREQ"; return XOREQ;}
+"->"         		{return INDSEL;}
+"++"         		{return PLUSPLUS;}
+"--"         		{return MINUSMINUS;}
+"<<"         		{return SHL;}
+">>"         		{return SHR;}
+"<="         		{return LTEQ;}
+">="         		{return GTEQ;}
+"=="         		{return EQEQ;}
+"!="         		{return NOTEQ;}
+"&&"         		{return LOGAND;}
+"||"         		{return LOGOR;}
+"..."			{return ELLIPSIS;}
+"*="         		{return TIMESEQ;}
+"/="         		{return DIVEQ;}
+"%="         		{return MODEQ;}
+"+="         		{return PLUSEQ;}
+"-="         		{return MINUSEQ;}
+"<<="        		{return SHLEQ;}
+">>="        		{return SHREQ;}
+"&="         		{return ANDEQ;}
+"|="         		{return OREQ;}
+"^="         		{return XOREQ;}
 
 
  /* Punctuation */
@@ -352,7 +353,7 @@ L?\'					{state = CHARLIT; BEGIN(CHAR_STATE);}
 
 void int_info(char *buf, int sign, int type)
 {
-	yylval.num.int_value = atoi(buf);
+	yylval.num.int_value = strtoull(buf, (char **)NULL, 10);
 	yylval.num.sign = sign;	
 	yylval.num.type = type;
 }
@@ -428,6 +429,73 @@ void print_char(char c)
 	}
 }
 
+char* print_kw(int token)
+{
+	switch(token)
+	{
+		case INDSEL:		return "INDSEL"; 
+		case PLUSPLUS:		return "PLUSPLUS";
+		case MINUSMINUS:	return "MINUSMINUS";
+		case SHL:		return "SHL";
+		case SHR:		return "SHR";
+		case LTEQ:		return "LTEQ";
+		case GTEQ:		return "GTEQ";
+		case EQEQ:		return "EQEQ";
+		case NOTEQ:		return "NOTEQ";
+		case LOGAND:		return "LOGAND";
+		case LOGOR:		return "LOGOR";
+		case ELLIPSIS:		return "ELLIPSIS";
+		case TIMESEQ:		return "TIMESEQ";
+		case DIVEQ:		return "DIVEQ";
+		case MODEQ:		return "MODEQ";
+		case PLUSEQ:		return "PLUSEQ";
+		case MINUSEQ:		return "MINUSEQ";
+		case SHLEQ:		return "SHLEQ";
+		case SHREQ:		return "SHREQ";
+		case ANDEQ:		return "ANDEQ";
+		case OREQ:		return "OREQ";
+		case XOREQ:		return "XOREQ";
+		case AUTO:		return "AUTO";
+		case BREAK:		return "BREAK";
+		case CASE:		return "CASE";
+		case CHAR:		return "CHAR";
+		case CONST:		return "CONST";
+		case CONTINUE:		return "CONTINUE";
+		case DEFAULT:		return "DEFAULT";
+		case DO:		return "DO";
+		case DOUBLE:		return "DOUBLE";
+		case ELSE:		return "ELSE";
+		case ENUM:		return "ENUM";
+		case EXTERN:		return "EXTERN";
+		case FLOAT:		return "FLOAT";
+		case FOR:		return "FOR";
+		case GOTO:		return "GOTO";
+		case IF:		return "IF";
+		case INLINE:		return "INLINE";
+		case INT:		return "INT";
+		case LONG:		return "LONG";
+		case REGISTER:		return "REGISTER";
+		case RESTRICT:		return "RESTRICT";
+		case RETURN:		return "RETURN";
+		case SHORT:		return "SHORT";
+		case SIGNED:		return "SIGNED";
+		case SIZEOF:		return "SIZEOF";
+		case STATIC:		return "STATIC";
+		case STRUCT:		return "STRUCT";
+		case SWITCH:		return "SWITCH";
+		case TYPEDEF:		return "TYPEDEF";
+		case UNION:		return "UNION";
+		case UNSIGNED:		return "UNSIGNED";
+		case VOID:		return "VOID";
+		case VOLATILE:		return "VOLATILE";
+		case WHILE:		return "WHILE";
+		case _BOOL:		return "_BOOL";
+		case _COMPLEX:		return "_COMPLEX";
+		case _IMAGINARY:	return "_IMAGINARY";
+		default:		return "ERROR"; 
+	}
+}
+
 void warn_msg(char *file_name, int line_number, char *msg)
 {
 	fprintf(stderr, "%s: %d: Warning: %s\n", file_name, line_number, msg);
@@ -483,7 +551,7 @@ int main(int argc, char **argv)
 								
 						break;
 
-				default:	fprintf(stdout, "%s\t %d\t %s\n", file, lineno, yylval.kw);
+				default:	fprintf(stdout, "%s\t %d\t %s\n", file, lineno, print_kw(t));
 						break;
 			}
 		}
