@@ -16,7 +16,6 @@ struct identifier
 struct string_literal
 {
 	char word[4096];
-	char print_word[4096];
 	int length;
 
 } ;
@@ -37,7 +36,6 @@ typedef union
 	struct string_literal string;
 	struct number num;
 	char char_lit;
-	char *kw;
 } YYSTYPE;
 
 YYSTYPE yylval;
