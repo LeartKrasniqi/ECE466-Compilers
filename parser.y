@@ -14,25 +14,24 @@ char* print_kw(int token);
 %error-verbose
 %union{ /* Definition of yylval union */
 		
-		struct identifier {
-			char *name;
-		} ident;
+	struct identifier {
+		char *name;
+	} ident;
 
-		struct string_literal {
-			char word[4096];
-			int length;
-		} string;
+	struct string_literal {
+		char word[4096];
+		int length;
+	} string;
 
-		struct number {
-			unsigned long long int_value;
-			long double float_value;
-			int sign;
-			int type;
-		} num;
+	struct number {
+		unsigned long long int_value;
+		long double float_value;
+		int sign;
+		int type;
+	} num;
 
-		char char_lit;
-
-		struct astnode *astnode_p;
+	char char_lit;
+	struct astnode *astnode_p;
 
 }
 
@@ -54,17 +53,16 @@ char* print_kw(int token);
 %start expression_statement
 
 %%
-/* TODO - fix expression list */
 
  /* Grammars */
- expression_statement : expression ';'                          {
+ expression_statement : expression ';'            		{
                                                                     $$ = astnode_alloc(AST_TOP_EXPR);
                                                                     $$->u.top_expr.left = $1;
                                                                     fprintf(stdout, "\n\n---------- BEGIN LINE %d ----------\n", lineno);
                                                                     print_ast($$, 0);
                                                                     fprintf(stdout, "\n---------- END LINE %d ----------\n", lineno);
                                                                 }
-					  | expression_statement expression ';'     { /* More than one expression */	
+		      | expression_statement expression ';'     { /* More than one expression */	
                                                                     $$ = astnode_alloc(AST_TOP_EXPR);
                                                                     $$->u.top_expr.left = $2;
                                                                     fprintf(stdout, "\n\n---------- BEGIN LINE %d ----------\n", lineno);
@@ -74,73 +72,73 @@ char* print_kw(int token);
                       ;
 
  /* Expressions */
-primary_expression  : IDENT			{ /* Identifiers */
+primary_expression  : IDENT	{ /* Identifiers */
                                     $$ = astnode_alloc(AST_IDENT);
                                     $$->u.ident.name = yylval.ident.name;
                                 }	
-			   		        | constant_expression			
-			   		        | parenthesized_expression	
-			   		        ;
+	      	    | constant_expression			
+	 	    | parenthesized_expression	
+		    ;
 
 constant_expression : NUMBER 	{ /* Various Numbers */
-			   						$$ = astnode_alloc(AST_NUMBER);
-			   						$$->u.num.int_value = yylval.num.int_value;
-			   						$$->u.num.float_value = yylval.num.float_value;
-			   						$$->u.num.sign = yylval.num.sign;
-			   						$$->u.num.type = yylval.num.type;
-								}
-					| CHARLIT 	{ /* Character Literals */
-									$$ = astnode_alloc(AST_CHARLIT);
-									$$->u.charlit.c = yylval.char_lit;
-								}
-					| STRING 	{ /* Strings */
-									$$ = astnode_alloc(AST_STRING);
-									strncpy($$->u.string.word, yylval.string.word, yylval.string.length);
-									$$->u.string.length = yylval.string.length;
-								}
-					;
+			   		$$ = astnode_alloc(AST_NUMBER);
+			   		$$->u.num.int_value = yylval.num.int_value;
+			   		$$->u.num.float_value = yylval.num.float_value;
+			   		$$->u.num.sign = yylval.num.sign;
+			   		$$->u.num.type = yylval.num.type;
+				}
+		    | CHARLIT 	{ /* Character Literals */
+					$$ = astnode_alloc(AST_CHARLIT);
+					$$->u.charlit.c = yylval.char_lit;
+				}
+		    | STRING 	{ /* Strings */
+					$$ = astnode_alloc(AST_STRING);
+					strncpy($$->u.string.word, yylval.string.word, yylval.string.length);
+					$$->u.string.length = yylval.string.length;
+				}
+		    ;
 
-parenthesized_expression :	'(' expression ')'	{$$ = $2;}
-						 ;
+parenthesized_expression : '(' expression ')'	{$$ = $2;}
+			 ;
 
 postfix_expression : primary_expression
-				   | subscript_expression
-				   | component_selection_expression
-				   | function_call
-				   | postincrement_expression
-				   | postdecrement_expression
-				   /*| compound_literal*/
-				   ;
+		   | subscript_expression
+		   | component_selection_expression
+		   | function_call
+		   | postincrement_expression
+		   | postdecrement_expression
+		   /*| compound_literal*/
+		   ;
 
 subscript_expression : postfix_expression '[' expression ']' 	{ /* Convert a[b] to *(a + b) */
-				   													$$ = astnode_alloc(AST_UNOP);
-				   													$$->u.unop.operator = '*';
-				   													struct astnode *next = astnode_alloc(AST_BINOP);
-				   													$$->u.unop.left = next;
-				   													next->u.binop.operator = '+';
-				   													next->u.binop.left = $1;
-				   													next->u.binop.right = $3; 
-																}
+				   					$$ = astnode_alloc(AST_UNOP);
+				   					$$->u.unop.operator = '*';
+				   					struct astnode *next = astnode_alloc(AST_BINOP);
+				   					$$->u.unop.left = next;
+				   					next->u.binop.operator = '+';
+				   					next->u.binop.left = $1;
+				   					next->u.binop.right = $3; 
+								}
 					 ;
 
 component_selection_expression : postfix_expression '.' IDENT 		{ /* Direct Component Selection */	
-					 													$$ = astnode_alloc(AST_COMP_SELECT);
-					 													$$->u.comp_select.left = $1;
-					 													$$->u.comp_select.right = astnode_alloc(AST_IDENT);
-																		$$->u.comp_select.right->u.ident.name = yylval.ident.name;
-																	}	
-							   | postfix_expression INDSEL IDENT 	{ /* Indirect Component Selection -- Convert to Direct */
-																		$$ = astnode_alloc(AST_COMP_SELECT);
-																		$$->u.comp_select.right = astnode_alloc(AST_IDENT);
-																		$$->u.comp_select.right->u.ident.name = yylval.ident.name;
+										$$ = astnode_alloc(AST_COMP_SELECT);
+										$$->u.comp_select.left = $1;
+										$$->u.comp_select.right = astnode_alloc(AST_IDENT);
+										$$->u.comp_select.right->u.ident.name = yylval.ident.name;
+									}	
+			       | postfix_expression INDSEL IDENT 	{ /* Indirect Component Selection -- Convert to Direct */
+										$$ = astnode_alloc(AST_COMP_SELECT);
+										$$->u.comp_select.right = astnode_alloc(AST_IDENT);
+										$$->u.comp_select.right->u.ident.name = yylval.ident.name;
+										
+										struct astnode *p = astnode_alloc(AST_UNOP);
+										p->u.unop.operator = '*';
+										p->u.unop.left = $1;
 
-																		struct astnode *p = astnode_alloc(AST_UNOP);
-																		p->u.unop.operator = '*';
-																		p->u.unop.left = $1;
-
-																		$$->u.comp_select.left = p;
-							   										}
-							   ;
+										$$->u.comp_select.left = p;
+							   		}
+			       ;
 
 function_call : postfix_expression '(' ')'						{ /* Function with no arguments */
 																	$$ = astnode_alloc(AST_FNCALL);
