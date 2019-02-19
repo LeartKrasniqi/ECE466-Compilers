@@ -483,7 +483,7 @@ assignment_op : '=' 		{$$ = '=';}
 			  ;
 
 expression : assignment_expression					
-		   | expression ',' assignment_expression 	{  /* List of expressions in a single line */
+		   | expression ',' assignment_expression 	{ /* List of expressions in a single line */
 		   												$$ = astnode_alloc(AST_EXPR_LIST);
 		   												$$->u.expr_list.left = $1;
 		   												$$->u.expr_list.right = $3;		 
