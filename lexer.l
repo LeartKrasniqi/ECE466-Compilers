@@ -7,9 +7,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
+#include "def.h"
+#include "parser.tab.h"
+/*
 #include "lexer.h"	
 #include "tokens-manual.h"
-
+*/
 char file[256] = "<stdin>";
 int state = 0;
 int lineno = 1;
@@ -501,7 +504,7 @@ void warn_msg(char *file_name, int line_number, char *msg)
 	fprintf(stderr, "%s: %d: Warning: %s\n", file_name, line_number, msg);
 }
 
-
+#if 0
  /* Test program */
 int main(int argc, char **argv)
 {
@@ -561,3 +564,4 @@ int main(int argc, char **argv)
 	return 0;
 
 }
+#endif
