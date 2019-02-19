@@ -1,5 +1,5 @@
 %debug
-%{	/* Parser */
+%{ /* Parser */
 #include "ast.h"
 #include <stdio.h>
 #include <stdlib.h>
