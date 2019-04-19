@@ -88,8 +88,7 @@ int symbol_exists;
 
 %%
 /* TODO - 	fix indentation in print_ast, 			- Done i think
-			figuring out if a label is defined, 
-			cleaning up print_sym code, 
+			figuring out if a label is defined,  
 			fix list of expressions 				- Done i think 
 */
 
