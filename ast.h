@@ -70,6 +70,7 @@ struct astnode_string {
 	union astnode *next;
 	char word[4096];
 	int length;
+	int number; 			/* Used in target code gen */
 };
 
 struct astnode_fncall {
@@ -290,6 +291,7 @@ struct astnode_array {
 	int node_type;
 	union astnode *prev;
 	union astnode *next;
+	char *name; 			/* Name of array */
 	int size;				/* Number of elements in array */
 	union astnode *type; 	/* Type of values stored in array */ 
 	//union astnode *left;
@@ -300,6 +302,7 @@ struct astnode_temp {
 	int node_type;
 	union astnode *prev;
 	union astnode *next;
+	int number; 			/* e.g. if = 5, emit %T00005 */
 };
 
 

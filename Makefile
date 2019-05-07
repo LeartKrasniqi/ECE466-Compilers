@@ -1,5 +1,5 @@
-parser: parser.tab.o ast.o sym_tab.o lex.yy.o
-		gcc -o parser parser.tab.o ast.o sym_tab.o lex.yy.o 
+parser: parser.tab.o ast.o sym_tab.o quads.o lex.yy.o
+		gcc -o parser parser.tab.o ast.o sym_tab.o quads.o lex.yy.o 
 
 lex.yy.o: lexer.l parser.tab.h def.h
 		flex lexer.l
@@ -8,6 +8,9 @@ lex.yy.o: lexer.l parser.tab.h def.h
 parser.tab.o: parser.y ast.h sym_tab.h
 		bison -vd parser.y
 		gcc -c parser.tab.c
+
+quads.o: quads.h quads.c
+		gcc -c quads.c
 
 sym_tab.o: sym_tab.h sym_tab.c
 		gcc -c sym_tab.c

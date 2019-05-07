@@ -2,6 +2,7 @@
 %{	/* Parser */
 #include "ast.h"
 #include "sym_tab.h"
+#include "quads.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -13,6 +14,8 @@ char* print_kw(int token);
 struct symbol_table *curr_scope;
 struct symbol *curr_symbol;
 int symbol_exists;
+int curr_offset = 0;
+FILE *output_file;
 
 %}
 %error-verbose
@@ -50,10 +53,10 @@ int symbol_exists;
 %type <astnode_p> declaration initialized_declarator_list storage_class_specifier type_specifier 
 %type <astnode_p> /*function_specifier*/ initialized_declarator declarator initializer enum_type_specifier floating_point_type_specifier
 %type <astnode_p> integer_type_specifier structure_type_specifier /*typedef_name*/ union_type_specifier void_type_specifier pointer_declarator
-%type <astnode_p> direct_declarator simple_declarator function_declarator array_declarator pointer type_qualifier_list /*constant_expression*/
+%type <astnode_p> direct_declarator simple_declarator function_declarator array_declarator pointer /*type_qualifier_list*/ /*constant_expression*/
 %type <astnode_p> parameter_type_list parameter_list parameter_declaration identifier_list initializer_list designation designator_list
-%type <astnode_p> designator type_qualifier
-/*%type <num.int_value> type_qualifier*/
+%type <astnode_p> designator /*type_qualifier*/
+%type <num.int_value> type_qualifier type_qualifier_list 
 %type <astnode_p> declaration_specifiers  
 
 /* Types */
@@ -83,15 +86,13 @@ int symbol_exists;
 /* Functions */
 %type <astnode_p> translation_unit top_level_declaration function_definition function_def_specifier declaration_list
 
+%left IF
+%left ELSE
+%right SIGNED UNSIGNED INT SHORT LONG DOUBLE CHAR EXTERN AUTO 
 
 %start translation_unit
 
 %%
-/* TODO - 	fix indentation in print_ast, 			- Done i think
-			figuring out if a label is defined,  
-			fix list of expressions 				- Done i think 
-*/
-
  /* Grammars */
 
 /* duplicate definition for assignment 2, might have to remove */
@@ -193,6 +194,7 @@ declaration : declaration_specifiers initialized_declarator_list ';' 		{
 												  										else if (temp->gen.node_type == AST_ARRAY)
 												  										{
 												  											temp->array.type = find_ret_value(temp);
+												  											temp->array.name = strdup(curr_symbol->name); 	/* Put here for quad gen, makes it easy to get name of array */
 												  										}
 												  										//else if (temp->gen.node_type == )
 												  											
@@ -216,6 +218,9 @@ declaration : declaration_specifiers initialized_declarator_list ';' 		{
 
 														  							curr_symbol->storage_class = sym_class_fn(curr_symbol);
 
+
+
+
 														  							/*
 														  							printf("SYMBOL NODE\n");
 																					union astnode *l = curr_symbol->ast_node->scalar.node;
@@ -237,6 +242,45 @@ declaration : declaration_specifiers initialized_declarator_list ';' 		{
 														  								exit(-1);
 														  							}
 
+														  							/* Frame offset stuff for assembly */
+														  							if(curr_symbol->storage_class == AUTO_T)
+														  							{														  																						  								
+														  								int var_size;
+														  								union astnode *jeff = $$;
+																						while(jeff != NULL)
+																						{
+																							if (jeff->gen.node_type == AST_POINTER)
+																							{
+																								var_size = 8;
+																								break;
+																							}
+
+																							if (jeff->gen.node_type == AST_SCALAR)
+																							{
+																								if (jeff->scalar.type == CHAR_T)
+																									var_size = 1;
+																								else
+																									var_size = 4;
+
+																								break;																																															
+																							}
+
+																							if(jeff->gen.node_type == AST_ARRAY)
+																							{
+																								var_size = quad_get_sizeof(jeff->array.type);
+																								break;
+																							}
+																
+																							jeff = jeff->gen.prev;
+																						}
+
+														  								curr_symbol->frame_offset = curr_offset + var_size;
+
+														  								if (jeff->gen.node_type == AST_ARRAY)
+														  									curr_offset += var_size * jeff->array.size;
+														  								else 
+														  									curr_offset += var_size;
+														  							}
 
 
 																					curr_symbol = curr_symbol->list;
@@ -333,7 +377,7 @@ type_specifier : enum_type_specifier 				{ /* Ignore for now */}
 			   | void_type_specifier 				
 			   ;
 
-type_qualifier : CONST 		
+type_qualifier : CONST 			
 			   | VOLATILE 	
 			   | RESTRICT 	
 			   ;
@@ -393,7 +437,7 @@ pointer : '*' 								{ /* Simple Pointer */
 											}
 		;
 
-type_qualifier_list : type_qualifier
+type_qualifier_list : type_qualifier 		
 					| type_qualifier_list type_qualifier
 					;
 
@@ -445,13 +489,13 @@ parameter_declaration : declaration_specifiers declarator
 					  | declaration_specifiers abstract_declarator
 					  ;
 
-identifier_list : IDENT
-				| parameter_list ',' IDENT
+identifier_list : IDENT 	{$$ = NULL;}
+				| parameter_list ',' IDENT {$$ = NULL;}
 				;
 
 initializer : assignment_expression
-		   | '{' initializer_list '}' 		
-		   | '{' initializer_list ',' '}'
+		   | '{' initializer_list '}' 		{$$ = $2;}
+		   | '{' initializer_list ',' '}' 	{$$ = $2;}
 		   ;
 
 initializer_list : initializer
@@ -468,8 +512,8 @@ designator_list : designator
 				;
 
 designator : /*'[' constant_expression ']'*/
-				'[' conditional_expression ']'
-		   | '.' IDENT
+				'[' conditional_expression ']' 	{$$ = $2;}
+		   | '.' IDENT 	{$$ = NULL;}
 		   ;
 
 
@@ -601,7 +645,7 @@ structure_type_definition : STRUCT '{' {union astnode *n_s = astnode_alloc(AST_S
 																																					  																							}
 						  ;
 
-structure_type_reference : STRUCT structure_tag 								
+structure_type_reference : STRUCT structure_tag 	{$$ = $2;}							
 						 ;
 
 structure_tag : IDENT 		{ /* Tag is IDENT */
@@ -722,8 +766,8 @@ component_declarator : simple_component
 simple_component : declarator 	{}//$$ = astnode_reverse($1, PREV);}
 				 ;
 
-bit_field : ':' width
-		  | declarator ':' width
+bit_field : ':' width 				{$$ = $2;}
+		  | declarator ':' width 
 		  ;
 
 width : /*constant_expression*/
@@ -734,14 +778,14 @@ union_type_specifier : union_type_definition
 					 | union_type_reference
 					 ;
 
-union_type_definition : UNION '{' field_list '}'
-					  | UNION union_tag '{' field_list '}'
+union_type_definition : UNION '{' field_list '}' 				{$$ = NULL;}
+					  | UNION union_tag '{' field_list '}' 		{$$ = NULL;}
 					  ;
 
-union_type_reference : UNION union_tag
+union_type_reference : UNION union_tag {$$ = NULL;}
 					 ;
 
-union_tag : IDENT
+union_tag : IDENT {$$ = NULL; /* for now */}
 		  ;
 
 void_type_specifier : VOID 		{ /* VOID specifier, treat as scalar */
@@ -765,17 +809,17 @@ abstract_declarator : pointer
 					| pointer direct_abstract_declarator
 					;
 
-direct_abstract_declarator : '(' abstract_declarator ')'
-						   | '[' ']'
-						   | '[' conditional_expression ']' /*| '[' constant_expression ']'*/
+direct_abstract_declarator : '(' abstract_declarator ')' 	{$$ = $2;}
+						   | '[' ']' 						{$$ = NULL;}
+						   | '[' conditional_expression ']' /*| '[' constant_expression ']'*/ 		{$$ = $2;}
 						   | direct_abstract_declarator '[' ']'
 						   | direct_abstract_declarator '[' conditional_expression ']' /*constant_expression ']'*/
-						   | '[' expression ']'
+						   | '[' expression ']' 	{$$ = $2;}
 						   | direct_abstract_declarator '[' expression ']'
-						   | '[' '*' ']'
+						   | '[' '*' ']' 	{$$ = NULL;}
 						   | direct_abstract_declarator '[' '*' ']'
-						   | '(' ')'
-						   | '(' parameter_type_list ')'
+						   | '(' ')' 	{$$ = NULL;}
+						   | '(' parameter_type_list ')' 	{$$ = $2;}
 						   | direct_abstract_declarator '(' ')'
 						   | direct_abstract_declarator '(' parameter_type_list ')'
 						   ;
@@ -1398,8 +1442,10 @@ function_definition : function_def_specifier '{' {curr_scope = symbol_table_allo
 																																								/* Print symbol table for function */
 																																								print_sym_tab(curr_scope);
 																																								ast_dump(curr_scope, $4, $1->ident.name);
-
+																																								gen_fn_quads($1, $4, curr_scope, output_file);
+																																								
 																																								curr_scope = symbol_table_pop(curr_scope);
+																																								curr_offset = 0;
 
 																																								//$1->fn.body = $4; - older	
 
@@ -1509,8 +1555,20 @@ declaration_list : declaration
 
 int main(int argc, char **argv)
 {	
+	if (argc > 2)
+	{
+		fprintf(stderr, "Error: Expected format ./parser [outfile]\n");
+		exit(-1);
+	}
+	if (argc == 2)
+		output_file = fopen(argv[1], "w");
+	else
+		output_file = stdout;
+
+
 	curr_scope = symbol_table_alloc(GLOBAL_SCOPE, 1, file, NULL);
 	yyparse();
 	print_sym_tab(curr_scope);
+	fclose(output_file);
 	return 0;
 }

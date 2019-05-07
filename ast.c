@@ -304,6 +304,14 @@ void ast_dump(struct symbol_table *t, union astnode *root, char *name)
 	union astnode *n = root;
 	while (n != NULL)
 	{
+		/* skips the printing of definitions of idents */
+		if(n->gen.node_type == AST_IDENT)
+		{
+			n = n->gen.next;
+			continue;
+		}
+
+
 		print_ast(t, n, 0);
 
 		/* Avoids the repetition in the ELSE part */

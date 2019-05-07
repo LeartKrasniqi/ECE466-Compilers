@@ -25,6 +25,7 @@ struct symbol {
 		int scope_type;
 		int redeclaration; 			/* Flag for redeclaration */
 		struct symbol *list;		/* Used for a list of symbols, i.e. int a,b,c; */
+		int frame_offset; 			/* Used in assembly */
 };
 	
 struct symbol_table {

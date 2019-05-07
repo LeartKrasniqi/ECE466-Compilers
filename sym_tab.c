@@ -354,7 +354,7 @@ void print_sym_tab(struct symbol_table *t)
 		}
 		else if(strcmp(use, "variable") == 0)
 		{
-			printf("%s is defined at  %s:%d [in %s scope starting at %s:%d] as a %s with stgclass %s of type: \n", s->name, s->filename, s->lineno, get_scope_name(t->scope_type), t->filename, t->lineno, use, find_sym_class(s));
+			printf("%s is defined at  %s:%d [in %s scope starting at %s:%d] as a %s with stgclass %s (offset = -%d) of type: \n", s->name, s->filename, s->lineno, get_scope_name(t->scope_type), t->filename, t->lineno, use, find_sym_class(s), s->frame_offset);
 			union astnode *n = s->ast_node->scalar.node; /* In order to get to AST_IDENT node, not just the AST_SCALAR one */ 
 
 			/* Walk along node trail until we find the right node */
@@ -472,7 +472,7 @@ char * find_sym_type(struct symbol *symbol)
 
 char * find_sym_class(struct symbol *symbol)
 {
-	union astnode *n = symbol->ast_node;
+	union astnode *n = symbol->ast_node->scalar.node;
 	while (n != NULL)
 	{
 		if (n->gen.node_type == AST_STORAGE)
