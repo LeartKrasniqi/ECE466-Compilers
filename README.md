@@ -11,3 +11,11 @@ Assignment 4: Statements.  Completion of the AST to include all statements.
 Assignment 5: Quads.  Generation of pseudo-opcodes.
 
 Assignment 6: Target Gode Generation.  Translate quads into x86 assembly.
+
+
+### How to Run
+```
+gcc -E input.c | ./parser output.s
+cc -m32 output.s
+./a.out
+```
